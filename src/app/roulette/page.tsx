@@ -1,31 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { Gift, Sparkles, Coins, HelpCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { spinRoulette } from '@/actions';
 
 export default function RoulettePage() {
     const [spinning, setSpinning] = useState(false);
     const [result, setResult] = useState<number | null>(null);
     const [showModal, setShowModal] = useState(false);
+    const [isPending, startTransition] = useTransition();
 
-    // Inteligência Mockada:
-    // "Se você comprou mais Ouro, o bônus de 5% a 20% [...aplica-se no] Ouro no seu próximo pedido."
     const bonusItem = "Ouro (Mais comprado desta semana)";
 
-    const spinOptions = [5, 10, 15, 20]; // percentages
-
     const handleSpin = () => {
-        if (spinning || result !== null) return;
+        if (spinning || result !== null || isPending) return;
         setSpinning(true);
 
-        // Animação fake delay
-        setTimeout(() => {
-            const randomValue = spinOptions[Math.floor(Math.random() * spinOptions.length)];
-            setResult(randomValue);
-            setSpinning(false);
-            setTimeout(() => setShowModal(true), 800);
-        }, 3000);
+        // Dispara a Action no Servidor
+        startTransition(async () => {
+            const data = await spinRoulette();
+
+            if (data.success) {
+                setResult(data.result);
+                setSpinning(false);
+                setTimeout(() => setShowModal(true), 800);
+            }
+        });
     };
 
     return (

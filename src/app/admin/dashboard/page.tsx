@@ -1,26 +1,24 @@
-'use client';
-
-import { useState } from 'react';
-import { ShieldCheck, UserCheck, AlertTriangle, Eye, CheckCircle2, XCircle } from 'lucide-react';
+import { ShieldCheck, UserCheck, AlertTriangle, Eye } from 'lucide-react';
 import Link from 'next/link';
+import { AdminApproveButton, AdminRejectButton } from './ClientButtons';
 
-export default function AdminDashboardPage() {
-    const [candidates, setCandidates] = useState([
+// Server Component (Buscar de DB falso)
+async function getCandidates() {
+    return [
         { id: 1, user: 'GamerFake', requestedRole: 'Vendedor', rss: '5B Comida', link: 'wa.me/fake1' },
         { id: 2, user: 'Lancelot', requestedRole: 'Jornalista', reason: 'Sou muito ativo e conheço as regras.', link: 'wa.me/lancelot2' }
-    ]);
+    ];
+}
 
-    const [disputes] = useState([
+async function getDisputes() {
+    return [
         { id: 'REQ-10B4', buyer: 'ReiArthur', seller: 'Icaro', status: 'Disputa', amount: '5B Comida' }
-    ]);
+    ];
+}
 
-    const approveRole = (id: number) => {
-        setCandidates(candidates.filter(c => c.id !== id));
-    };
-
-    const rejectRole = (id: number) => {
-        setCandidates(candidates.filter(c => c.id !== id));
-    };
+export default async function AdminDashboardPage() {
+    const candidates = await getCandidates();
+    const disputes = await getDisputes();
 
     return (
         <div className="animate-in fade-in duration-500 min-h-[calc(100vh-8rem)] pb-10">
@@ -63,19 +61,10 @@ export default function AdminDashboardPage() {
                                         <p className="text-xs font-mono text-zinc-500 mt-1 truncate">{candidate.link}</p>
                                     </div>
 
+                                    {/* Isolando interatividade em Client Components */}
                                     <div className="flex gap-2">
-                                        <button
-                                            onClick={() => rejectRole(candidate.id)}
-                                            className="flex-1 flex items-center justify-center gap-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 font-bold py-2 rounded-lg transition-colors text-xs"
-                                        >
-                                            <XCircle className="w-4 h-4" /> Recusar
-                                        </button>
-                                        <button
-                                            onClick={() => approveRole(candidate.id)}
-                                            className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 font-bold py-2 rounded-lg transition-colors text-xs"
-                                        >
-                                            <CheckCircle2 className="w-4 h-4" /> Aprovar
-                                        </button>
+                                        <AdminRejectButton candidateId={candidate.id} />
+                                        <AdminApproveButton candidateId={candidate.id} />
                                     </div>
                                 </div>
                             ))}
@@ -104,7 +93,7 @@ export default function AdminDashboardPage() {
                                     Conflito reportado entre o Vendedor <strong className="text-zinc-100">{dispute.seller}</strong> e o Comprador <strong className="text-zinc-100">{dispute.buyer}</strong> referente ao resgate de {dispute.amount}.
                                 </p>
 
-                                <Link href={`/marketplace/order/${dispute.id}`} className="w-full bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 font-bold py-2.5 rounded-lg text-xs transition-colors flex justify-center items-center gap-2">
+                                <Link href={`/marketplace/order/${dispute.id}`} className="w-full bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 font-bold py-2.5 rounded-lg text-xs transition-colors flex justify-center items-center gap-2 active:scale-95">
                                     <Eye className="w-4 h-4" />
                                     Intervir no Chat de Transação
                                 </Link>

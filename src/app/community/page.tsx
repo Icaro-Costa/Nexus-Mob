@@ -1,12 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { Heart, MessageCircle, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { useState, useRef, useTransition, useEffect } from 'react';
+import { Heart, MessageCircle, AlertTriangle, ShieldAlert, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { validateCommunityPost } from '@/actions';
 
-// Mocked Blacklist
-const BLACKLIST = ['hack', 'bot', 'venda externa', 'discord', 'telegram', 'ofensivo'];
-
+// Esse componente client precisa lidar com otimismo ou state local enquanto aguarda o Next revalidar
 export default function CommunityPage() {
     const [posts, setPosts] = useState([
         {
@@ -32,43 +31,27 @@ export default function CommunityPage() {
         }
     ]);
 
-    const [newPost, setNewPost] = useState('');
     const [warning, setWarning] = useState<string | null>(null);
+    const formRef = useRef<HTMLFormElement>(null);
+    const [isPending, startTransition] = useTransition();
 
-    const handlePost = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!newPost.trim()) return;
+    const handleAction = async (formData: FormData) => {
+        setWarning(null);
+        startTransition(async () => {
+            const result = await validateCommunityPost(formData);
 
-        const lowerPost = newPost.toLowerCase();
-        const hasBadWords = BLACKLIST.some(word => lowerPost.includes(word));
+            if (result.warning) {
+                setWarning(result.warning);
+                setTimeout(() => setWarning(null), 5000);
+            }
 
-        if (hasBadWords) {
-            setWarning('Sua postagem contém termos restritos e foi enviada para Revisão do Jornalista.');
-            const post = {
-                id: Date.now(),
-                author: 'Icaro',
-                role: 'Vendedor',
-                content: newPost,
-                likes: 0,
-                comments: 0,
-                time: 'Agora',
-                status: 'pending' // pending review
-            };
-            // Em produção, isso iria para um banco de dados de pendências
-            setTimeout(() => setWarning(null), 5000);
-        } else {
-            setPosts([{
-                id: Date.now(),
-                author: 'Icaro',
-                role: 'Vendedor',
-                content: newPost,
-                likes: 0,
-                comments: 0,
-                time: 'Agora',
-                status: 'approved'
-            }, ...posts]);
-        }
-        setNewPost('');
+            if (result.post && result.status === 'approved') {
+                // Prependendo localmente para UI instantânea
+                setPosts(prev => [result.post as any, ...prev]);
+            }
+
+            formRef.current?.reset();
+        });
     };
 
     return (
@@ -81,13 +64,14 @@ export default function CommunityPage() {
 
             {/* Editor do Jogador */}
             <div className="p-4 border-b border-zinc-900/50 bg-zinc-900/20">
-                <form onSubmit={handlePost}>
+                <form ref={formRef} action={handleAction}>
                     <textarea
+                        name="content"
                         rows={3}
-                        value={newPost}
-                        onChange={(e) => setNewPost(e.target.value)}
+                        required
+                        disabled={isPending}
                         placeholder="O que está acontecendo no seu reino?"
-                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3 text-sm focus:outline-none focus:border-amber-500 transition-colors resize-none"
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3 text-sm focus:outline-none focus:border-amber-500 transition-colors resize-none disabled:opacity-50"
                     />
                     {warning && (
                         <div className="flex items-start gap-2 mt-2 p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
@@ -102,10 +86,10 @@ export default function CommunityPage() {
                         </Link>
                         <button
                             type="submit"
-                            disabled={!newPost.trim()}
-                            className="bg-amber-500 hover:bg-amber-400 disabled:opacity-50 disabled:hover:bg-amber-500 text-zinc-950 text-sm font-bold px-5 py-2 rounded-full transition-colors"
+                            disabled={isPending}
+                            className="bg-amber-500 hover:bg-amber-400 disabled:opacity-50 disabled:hover:bg-amber-500 text-zinc-950 text-sm font-bold px-5 py-2 rounded-full transition-all active:scale-95 flex items-center justify-center gap-2 min-w-[100px]"
                         >
-                            Publicar
+                            {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Publicar'}
                         </button>
                     </div>
                 </form>

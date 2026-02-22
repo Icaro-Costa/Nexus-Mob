@@ -1,11 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { ArrowLeft, Send } from 'lucide-react';
 import Link from 'next/link';
+import { submitApplication } from '@/actions';
 
 export default function WorkWithUsPage() {
     const [role, setRole] = useState('vendedor');
+    const formRef = useRef<HTMLFormElement>(null);
+
+    const handleAction = async (formData: FormData) => {
+        formData.append('role', role);
+        await submitApplication(formData);
+        formRef.current?.reset();
+        alert('Enviado com sucesso via Server Action!');
+    };
 
     return (
         <div className="animate-in slide-in-from-right-8 duration-300 min-h-screen">
@@ -21,7 +30,7 @@ export default function WorkWithUsPage() {
                     Para garantir a segurança dos usuários, a liberação de cargos passa por uma triagem direta com o ADM via WhatsApp ou Chat Interno.
                 </p>
 
-                <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+                <form ref={formRef} action={handleAction} className="space-y-6">
                     {/* Seleção do Cargo */}
                     <div className="space-y-3">
                         <label className="text-sm font-semibold text-zinc-300 uppercase tracking-wider block">Escolha o Cargo</label>
@@ -37,8 +46,8 @@ export default function WorkWithUsPage() {
                                     type="button"
                                     onClick={() => setRole(r.id)}
                                     className={`p-3 rounded-xl border text-left transition-all ${role === r.id
-                                            ? 'bg-amber-500/10 border-amber-500/50 text-amber-500'
-                                            : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:bg-zinc-800/50'
+                                        ? 'bg-amber-500/10 border-amber-500/50 text-amber-500'
+                                        : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:bg-zinc-800/50'
                                         }`}
                                 >
                                     <p className="font-semibold">{r.title}</p>
@@ -73,12 +82,12 @@ export default function WorkWithUsPage() {
                         {(role === 'jornalista' || role === 'bot') && (
                             <div>
                                 <label className="text-xs font-semibold text-zinc-400 mb-1.5 block">Por que deseja esta função?</label>
-                                <textarea rows={4} placeholder="Diga o motivo para o ADM analisar seu pedido." className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-3 text-sm focus:outline-none focus:border-amber-500 transition-colors"></textarea>
+                                <textarea name="reason" rows={4} placeholder="Diga o motivo para o ADM analisar seu pedido." className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-3 text-sm focus:outline-none focus:border-amber-500 transition-colors"></textarea>
                             </div>
                         )}
                     </div>
 
-                    <button className="w-full bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold py-4 rounded-xl transition-colors flex items-center justify-center gap-2 mt-8">
+                    <button type="submit" className="w-full bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold py-4 rounded-xl transition-colors flex items-center justify-center gap-2 mt-8 active:scale-95 shadow-lg shadow-amber-500/20">
                         Enviar Solicitação ao ADM
                         <Send className="w-4 h-4" />
                     </button>
